@@ -7,6 +7,7 @@ import GeographicAnalysis from './pages/GeographicAnalysis';
 import ReportsAnalytics from './pages/ReportsAnalytics';
 import Settings from './pages/Settings';
 import Modal from './components/common/Modal';
+import Badge from './components/common/Badge';
 import { formatCurrencyLakhs, formatDate } from './utils/formatters';
 import { AlertTriangle } from 'lucide-react';
 
@@ -85,30 +86,51 @@ export default function App() {
       >
         {selectedProject && (
           <div className="space-y-5 text-xs text-slate-700">
+            {/* Status & Risk Badges Banner */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 text-[11px] font-medium">Status:</span>
+                <Badge variant={selectedProject.status}>
+                  {selectedProject.status || 'Ongoing'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 text-[11px] font-medium">Risk Level:</span>
+                <Badge variant={selectedProject.riskLevel || (selectedProject.reviewFlag ? 'High Risk' : 'Normal')}>
+                  {selectedProject.riskLevel || (selectedProject.reviewFlag ? 'High Risk' : 'Normal')}
+                </Badge>
+              </div>
+            </div>
+
             {/* Review Flag Notice if flagged */}
-            {(selectedProject.reviewFlag || selectedProject.category) && (
+            {(selectedProject.reviewFlag || selectedProject.riskLevel === 'High Risk' || selectedProject.riskLevel === 'Medium Risk' || selectedProject.category) && (
               <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-1.5">
                 <div className="flex items-center gap-2 font-bold text-rose-800">
                   <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>Administrative Review Trigger: {selectedProject.flagCategory || selectedProject.category}</span>
+                  <span>Administrative Review Trigger: {selectedProject.flagCategory || selectedProject.category || selectedProject.riskLevel}</span>
                 </div>
                 <p className="text-[11px] text-rose-700 leading-relaxed">
-                  {selectedProject.flagReason || selectedProject.triggerDescription || 'Automated model identified statistical divergence for verification.'}
+                  {selectedProject.anomalyReason || selectedProject.flagReason || selectedProject.triggerDescription || 'Automated model identified statistical divergence for verification.'}
                 </p>
-                <div className="pt-1 flex items-center justify-between text-[10px] text-rose-600 font-mono">
-                  <span>Priority: {selectedProject.flagSeverity || selectedProject.severity || 'Medium'}</span>
-                  <span>Confidence: {selectedProject.modelConfidence ? `${(selectedProject.modelConfidence * 100).toFixed(0)}%` : '92%'}</span>
+                <div className="pt-1 flex items-center justify-between text-[10px] text-rose-600">
+                  <span>Priority: {selectedProject.riskLevel || selectedProject.flagSeverity || selectedProject.severity || 'Medium'}</span>
+                  <span className="italic">Review Notice: Anomaly flags require administrative verification and do not imply fraud.</span>
                 </div>
               </div>
             )}
 
-            {/* General Information */}
+            {/* Administrative & Location Particulars */}
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/70 space-y-3">
               <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">
-                Administrative Particulars
+                Administrative & Location Particulars
               </h4>
 
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">State</span>
+                  <strong className="text-slate-800">{selectedProject.state || 'Madhya Pradesh'}</strong>
+                </div>
+
                 <div>
                   <span className="text-slate-400 block text-[10px]">District Jurisdiction</span>
                   <strong className="text-slate-800">{selectedProject.district}</strong>
@@ -120,8 +142,8 @@ export default function App() {
                 </div>
 
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Sector Vertical</span>
-                  <strong className="text-slate-800">{selectedProject.sector || 'Rural Infrastructure'}</strong>
+                  <span className="text-slate-400 block text-[10px]">Work Type / Sector</span>
+                  <strong className="text-slate-800">{selectedProject.workType || selectedProject.sector || 'Rural Infrastructure'}</strong>
                 </div>
 
                 <div>
@@ -133,10 +155,35 @@ export default function App() {
                   <span className="text-slate-400 block text-[10px]">Recommending MP</span>
                   <strong className="text-slate-800">{selectedProject.mpName || 'District Parliamentary Office'}</strong>
                 </div>
+              </div>
+            </div>
 
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Sanction Date</span>
-                  <strong className="text-slate-800">{formatDate(selectedProject.sanctionDate || '2024-03-01')}</strong>
+            {/* Implementation Timeline & Dates */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/70 space-y-3">
+              <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+                Implementation Timeline & Dates
+              </h4>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-2.5 bg-white rounded-lg border border-slate-200 text-center">
+                  <span className="text-slate-400 block text-[10px]">Start Date</span>
+                  <strong className="text-slate-800 text-xs">
+                    {formatDate(selectedProject.startDate || selectedProject.sanctionDate || '2024-02-14')}
+                  </strong>
+                </div>
+
+                <div className="p-2.5 bg-white rounded-lg border border-slate-200 text-center">
+                  <span className="text-slate-400 block text-[10px]">Expected Completion</span>
+                  <strong className="text-slate-800 text-xs">
+                    {formatDate(selectedProject.expectedCompletion || '2024-11-30')}
+                  </strong>
+                </div>
+
+                <div className="p-2.5 bg-white rounded-lg border border-slate-200 text-center">
+                  <span className="text-slate-400 block text-[10px]">Financial Year</span>
+                  <strong className="text-slate-800 text-xs">
+                    {selectedProject.financialYear || 'FY 2024-25'}
+                  </strong>
                 </div>
               </div>
             </div>
@@ -183,7 +230,15 @@ export default function App() {
               </div>
               <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                 <div
-                  className="bg-sky-600 h-full rounded-full transition-all"
+                  className={`h-full rounded-full transition-all ${
+                    selectedProject.physicalProgress === 100
+                      ? 'bg-emerald-500'
+                      : selectedProject.status === 'Delayed'
+                      ? 'bg-amber-500'
+                      : selectedProject.status === 'Cancelled'
+                      ? 'bg-slate-400'
+                      : 'bg-sky-600'
+                  }`}
                   style={{ width: `${selectedProject.physicalProgress ?? 50}%` }}
                 />
               </div>
