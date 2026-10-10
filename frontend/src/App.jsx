@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from './components/layout/DashboardLayout';
 import OverviewDashboard from './pages/OverviewDashboard';
 import ProjectMonitoring from './pages/ProjectMonitoring';
@@ -6,36 +6,129 @@ import AnomalyDetection from './pages/AnomalyDetection';
 import GeographicAnalysis from './pages/GeographicAnalysis';
 import ReportsAnalytics from './pages/ReportsAnalytics';
 import Settings from './pages/Settings';
+import ProjectDetails from './pages/ProjectDetails';
 import Modal from './components/common/Modal';
 import Badge from './components/common/Badge';
 import { formatCurrencyLakhs, formatDate } from './utils/formatters';
+import { getProjectById } from './services/mockData';
 import { AlertTriangle } from 'lucide-react';
-
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [fiscalYear, setFiscalYear] = useState('FY 2024-25');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Drill-down Modal State
+  // Project Details State & Routing
   const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+
+  // Drill-down Modal State (optional fallback)
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleOpenProjectDetails = (project) => {
-    setSelectedProject(project);
-    setIsModalOpen(true);
+  // Parse path and hash to initialize route
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const pathname = window.location.pathname || '';
+      const hash = window.location.hash || '';
+
+      // Check for /projects/:id or #/projects/:id or #projects/:id
+      const projectRouteMatch =
+        pathname.match(/^\/projects\/([^/]+)/) ||
+        hash.match(/^#\/?projects\/([^/]+)/);
+
+      if (projectRouteMatch && projectRouteMatch[1]) {
+        const id = decodeURIComponent(projectRouteMatch[1]);
+        setSelectedProjectId(id);
+        const resolved = getProjectById(id);
+        setSelectedProject(resolved);
+        setActiveTab('project-details');
+        return;
+      }
+
+      // Check standard tabs
+      if (pathname === '/projects' || hash === '#projects' || hash === '#/projects') {
+        setActiveTab('projects');
+        setSelectedProject(null);
+        setSelectedProjectId(null);
+      } else if (pathname === '/anomalies' || hash === '#anomalies' || hash === '#/anomalies') {
+        setActiveTab('anomalies');
+        setSelectedProject(null);
+        setSelectedProjectId(null);
+      } else if (pathname === '/geographic' || hash === '#geographic' || hash === '#/geographic') {
+        setActiveTab('geographic');
+      } else if (pathname === '/reports' || hash === '#reports' || hash === '#/reports') {
+        setActiveTab('reports');
+      } else if (pathname === '/settings' || hash === '#settings' || hash === '#/settings') {
+        setActiveTab('settings');
+      } else if (pathname === '/' || pathname === '/overview') {
+        setActiveTab('overview');
+      }
+    };
+
+    // Run on initial load
+    handleLocationChange();
+
+    // Listen for browser Back/Forward navigation
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, []);
+
+  const handleOpenProjectDetails = (projectOrItem) => {
+    if (!projectOrItem) return;
+
+    // Resolve full project if workCode is passed from alerts
+    const id = projectOrItem.code || projectOrItem.workCode || projectOrItem.id;
+    const fullProject = getProjectById(id) || projectOrItem;
+
+    setSelectedProject(fullProject);
+    setSelectedProjectId(id);
+    setActiveTab('project-details');
+
+    // Update browser URL for routing
+    try {
+      window.history.pushState({ projectId: id }, '', `/projects/${encodeURIComponent(id)}`);
+    } catch {
+      window.location.hash = `/projects/${encodeURIComponent(id)}`;
+    }
+  };
+
+  const handleBackToProjects = () => {
+    setActiveTab('projects');
+    setSelectedProject(null);
+    setSelectedProjectId(null);
+    try {
+      window.history.pushState({}, '', '/projects');
+    } catch {
+      window.location.hash = '/projects';
+    }
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab !== 'project-details') {
+      setSelectedProject(null);
+      setSelectedProjectId(null);
+      try {
+        window.history.pushState({}, '', `/${tab === 'overview' ? '' : tab}`);
+      } catch {
+        window.location.hash = `/${tab}`;
+      }
+    }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setSelectedProject(null);
   };
 
   return (
     <>
       <DashboardLayout
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         fiscalYear={fiscalYear}
         setFiscalYear={setFiscalYear}
         searchQuery={searchQuery}
@@ -45,7 +138,7 @@ export default function App() {
         {activeTab === 'overview' && (
           <OverviewDashboard
             onSelectProject={handleOpenProjectDetails}
-            onNavigateToTab={(tab) => setActiveTab(tab)}
+            onNavigateToTab={(tab) => handleTabChange(tab)}
           />
         )}
 
@@ -53,6 +146,15 @@ export default function App() {
           <ProjectMonitoring
             onSelectProject={handleOpenProjectDetails}
             searchQuery={searchQuery}
+          />
+        )}
+
+        {activeTab === 'project-details' && (
+          <ProjectDetails
+            project={selectedProject}
+            projectId={selectedProjectId}
+            onBack={handleBackToProjects}
+            onNavigateToAnomalies={() => handleTabChange('anomalies')}
           />
         )}
 
@@ -64,7 +166,7 @@ export default function App() {
 
         {activeTab === 'geographic' && (
           <GeographicAnalysis
-            onNavigateToProjects={() => setActiveTab('projects')}
+            onNavigateToProjects={() => handleTabChange('projects')}
           />
         )}
 

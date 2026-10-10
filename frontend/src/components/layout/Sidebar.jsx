@@ -85,7 +85,7 @@ export default function Sidebar({
           <nav className="p-3 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activeTab === item.id;
+              const isActive = activeTab === item.id || (activeTab === 'project-details' && item.id === 'projects');
 
               return (
                 <button

@@ -17,6 +17,7 @@ export default function Header({
     geographic: 'Geographic Analysis & Spatial Mapping',
     reports: 'Reports and Analytics',
     settings: 'Settings & Model Thresholds',
+    'project-details': 'Project Details',
   };
 
   return (

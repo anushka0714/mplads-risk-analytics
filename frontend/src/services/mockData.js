@@ -172,6 +172,33 @@ export const RISK_LEVELS = [
 
 export const MOCK_PROJECTS = [
   {
+    id: 'PRJ-100',
+    code: 'MPLADS-001',
+    title: 'Construction of Community Hall',
+    state: 'Madhya Pradesh',
+    district: 'Indore',
+    constituency: 'Indore Parliamentary',
+    mpName: 'Hon. Shankar Lalwani (Fictional)',
+    workType: 'Community Sanitation Units',
+    sector: 'Community Infrastructure',
+    implementingAgency: 'Indore Municipal Technical Cell',
+    financialYear: 'FY 2024-25',
+    sanctionDate: '2024-03-01',
+    startDate: '2024-03-15',
+    expectedCompletion: '2024-12-15',
+    sanctionAmountLakhs: 50.00,
+    releasedAmountLakhs: 40.00,
+    expenditureLakhs: 34.00,
+    physicalProgress: 68,
+    status: 'Ongoing',
+    riskLevel: 'Medium Risk',
+    reviewFlag: true,
+    flagCategory: 'Progress-Disbursement Divergence',
+    flagSeverity: 'medium',
+    flagReason: 'Expenditure velocity at 68% with slow initial foundation sign-offs. Flagged for nodal milestone verification.',
+    anomalyReason: 'Expenditure velocity at 68% with slow initial foundation sign-offs. Flagged for nodal milestone verification.',
+  },
+  {
     id: 'PRJ-101',
     code: 'MPLADS-2024-0412',
     title: 'Construction of Community Health Center Ward Block',
@@ -740,3 +767,36 @@ export const ANOMALY_SCATTER_DATA = [
   { id: 17, workCode: 'MPLADS-2024-0198', progress: 35, expenditurePercent: 50, isAnomaly: true, category: 'Timeline Inactivity' },
   { id: 18, workCode: 'MPLADS-2024-0771', progress: 12, expenditurePercent: 45, isAnomaly: true, category: 'Timeline Inactivity' },
 ];
+
+/**
+ * Reusable helper to locate a project record by ID or Code (case-insensitive)
+ */
+export function getProjectById(identifier) {
+  if (!identifier) return null;
+  const cleanId = String(identifier).trim().toLowerCase();
+  
+  // Direct match on code or id
+  const directMatch = MOCK_PROJECTS.find(
+    (p) =>
+      (p.id && p.id.toLowerCase() === cleanId) ||
+      (p.code && p.code.toLowerCase() === cleanId)
+  );
+  if (directMatch) return directMatch;
+
+  // Check if identifier matches an alert workCode or id
+  const alertMatch = RECENT_ANOMALY_ALERTS.find(
+    (a) =>
+      (a.id && a.id.toLowerCase() === cleanId) ||
+      (a.workCode && a.workCode.toLowerCase() === cleanId)
+  );
+  if (alertMatch) {
+    const matchedPrj = MOCK_PROJECTS.find(
+      (p) => p.code && p.code.toLowerCase() === alertMatch.workCode.toLowerCase()
+    );
+    if (matchedPrj) {
+      return { ...matchedPrj, ...alertMatch, code: matchedPrj.code || alertMatch.workCode };
+    }
+  }
+
+  return null;
+}
