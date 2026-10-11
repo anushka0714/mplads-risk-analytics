@@ -1,0 +1,22 @@
+# Python virtual environments
+ml-env/
+.venv/
+venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Environment variables and secrets
+.env
+.env.*
+
+# Node dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Operating system files
+.DS_Store
+Thumbs.db
